@@ -2,9 +2,9 @@ import theano
 from theano import tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 from theano.tensor.signal import downsample
+from theano.tensor.nnet import conv3d2d
 import numpy as np
 from .common import _FLOATX, _EPSILON
-
 
 # INTERNAL UTILS
 theano.config.floatX = _FLOATX
@@ -631,6 +631,44 @@ def conv2d(x, kernel, strides=(1, 1), border_mode='valid', dim_ordering='th',
     return conv_out
 
 
+def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
+           image_shape=None, filter_shape=None):
+    '''
+    Run on cuDNN if available.
+    border_mode: string, "same" or "valid".
+    '''
+    if dim_ordering not in {'th', 'tf'}:
+        raise Exception('Unknown dim_ordering ' + str(dim_ordering))
+           
+    if dim_ordering == 'tf':
+        # TF uses the last dimension as channel dimension,
+        # instead of the 2nd one.
+        # TH input shape: (samples, input_depth, time, rows, cols)
+        # TF input shape: (samples, time, rows, cols, input_depth)
+        # TH kernel shape: (out_depth, input_depth, time, rows, cols)
+        # TF kernel shape: (time, rows, cols, input_depth, out_depth)
+        x = x.dimshuffle((0, 4, 1, 2, 3))
+        kernel = kernel.dimshuffle((4, 3, 0, 1, 2))
+        if image_shape:
+            image_shape = (image_shape[0], image_shape[4],
+                           image_shape[1], image_shape[2], image_shape[3])
+        if filter_shape:
+            filter_shape = (filter_shape[4], filter_shape[3],
+                            filter_shape[0], filter_shape[1], filter_shape[2])
+
+    # Shuffle the dimensions as per the input parameter order, restore it once done
+    conv_out = conv3d2d.conv3d(signals=x.dimshuffle(0, 2, 1, 3, 4),
+                               filters=kernel.dimshuffle(0, 2, 1, 3, 4),
+                               border_mode=border_mode)
+
+    conv_out = conv_out.dimshuffle(0, 2, 1, 3, 4)
+
+    if dim_ordering == 'tf':
+        conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
+    return conv_out
+
+
+
 def pool2d(x, pool_size, strides=(1, 1), border_mode='valid',
            dim_ordering='th', pool_mode='max'):
     if border_mode == 'same':
@@ -663,6 +701,59 @@ def pool2d(x, pool_size, strides=(1, 1), border_mode='valid',
 
     if dim_ordering == 'tf':
         pool_out = pool_out.dimshuffle((0, 2, 3, 1))
+    return pool_out
+
+def pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
+           dim_ordering='th', pool_mode='max'):
+    if border_mode == 'same':
+        # TODO: add implementation for border_mode="same"
+        raise Exception('border_mode="same" not supported with Theano.')
+    elif border_mode == 'valid':
+        ignore_border = True
+        padding = (0, 0)
+    else:
+        raise Exception('Invalid border mode: ' + str(border_mode))
+
+    if dim_ordering not in {'th', 'tf'}:
+        raise Exception('Unknown dim_ordering ' + str(dim_ordering))
+
+    if dim_ordering == 'tf':
+        x = x.dimshuffle((0, 4, 1, 2, 3))
+
+    if pool_mode == 'max':
+        # pooling over X, Z (last two channels)
+        output = downsample.max_pool_2d(input=x.dimshuffle(0, 1, 4, 3, 2),
+                                        ds=(pool_size[1], pool_size[0]),
+                                        ignore_border=ignore_border,
+                                        padding=padding,
+                                        mode='max')
+
+        # max_pool_2d X and Y, X constant
+        pool_out = downsample.max_pool_2d(input=output.dimshuffle(0, 1, 4, 3, 2),
+                                        ds=(1, pool_size[2]),
+                                        ignore_border=ignore_border,
+                                        padding=padding,
+                                        mode='max')
+        
+    elif pool_mode == 'avg':
+        # pooling over X, Z (last two channels)
+        output = downsample.max_pool_2d(input=x.dimshuffle(0, 1, 4, 3, 2),
+                                        ds=(pool_size[1], pool_size[0]),
+                                        ignore_border=ignore_border,
+                                        padding=padding,
+                                        mode='average_exc_pad')
+
+        # max_pool_2d X and Y, X constant
+        pool_out = downsample.max_pool_2d(input=output.dimshuffle(0, 1, 4, 3, 2),
+                                        ds=(1, pool_size[2]),
+                                        ignore_border=ignore_border,
+                                        padding=padding,
+                                        mode='average_exc_pad')
+    else:
+        raise Exception('Invalid pooling mode: ' + str(pool_mode))
+
+    if dim_ordering == 'tf':
+        pool_out = pool_out.dimshuffle((0, 2, 3, 4, 1))
     return pool_out
 
 # RANDOMNESS
