@@ -718,16 +718,16 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
             
     if border_mode == 'same':
         assert(strides == (1, 1, 1))
-        pad_z = (kernel.shape[2] - 1)
+        pad_t = (kernel.shape[2] - 1)
         pad_x = (kernel.shape[3] - 1)
         pad_y = (kernel.shape[4] - 1)
         output_shape = (x.shape[0], x.shape[1],
-                        x.shape[2] + pad_z,
+                        x.shape[2] + pad_t,
                         x.shape[3] + pad_x,
                         x.shape[4] + pad_y)
         output = T.zeros(output_shape)
         indices = (slice(None), slice(None),
-                   slice(pad_z//2, x.shape[2] + pad_z//2),
+                   slice(pad_t//2, x.shape[2] + pad_t//2),
                    slice(pad_x//2, x.shape[3] + pad_x//2),
                    slice(pad_y//2, x.shape[4] + pad_y//2))
         x = T.set_subtensor(output[indices], x)
