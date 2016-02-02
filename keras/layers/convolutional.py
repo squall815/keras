@@ -76,14 +76,12 @@ class Convolution1D(Layer):
                  input_dim=None, input_length=None, **kwargs):
 
         if border_mode not in {'valid', 'same'}:
-            raise Exception(
-                'Invalid border mode for Convolution1D:', border_mode)
+            raise Exception('Invalid border mode for Convolution1D:', border_mode)
         self.nb_filter = nb_filter
         self.filter_length = filter_length
         self.init = initializations.get(init)
         self.activation = activations.get(activation)
-        assert border_mode in {
-            'valid', 'same'}, 'border_mode must be in {valid, same}'
+        assert border_mode in {'valid', 'same'}, 'border_mode must be in {valid, same}'
         self.border_mode = border_mode
         self.subsample_length = subsample_length
 
@@ -239,8 +237,7 @@ class Convolution2D(Layer):
         self.nb_col = nb_col
         self.init = initializations.get(init)
         self.activation = activations.get(activation)
-        assert border_mode in {
-            'valid', 'same'}, 'border_mode must be in {valid, same}'
+        assert border_mode in {'valid', 'same'}, 'border_mode must be in {valid, same}'
         self.border_mode = border_mode
         self.subsample = tuple(subsample)
         assert dim_ordering in {'tf', 'th'}, 'dim_ordering must be in {tf, th}'
@@ -261,12 +258,10 @@ class Convolution2D(Layer):
     def build(self):
         if self.dim_ordering == 'th':
             stack_size = self.input_shape[1]
-            self.W_shape = (self.nb_filter, stack_size,
-                            self.nb_row, self.nb_col)
+            self.W_shape = (self.nb_filter, stack_size, self.nb_row, self.nb_col)
         elif self.dim_ordering == 'tf':
             stack_size = self.input_shape[3]
-            self.W_shape = (self.nb_row, self.nb_col,
-                            stack_size, self.nb_filter)
+            self.W_shape = (self.nb_row, self.nb_col, stack_size, self.nb_filter)
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
         self.W = self.init(self.W_shape)
@@ -406,16 +401,14 @@ class Convolution3D(Layer):
                  W_constraint=None, b_constraint=None, **kwargs):
 
         if border_mode not in {'valid', 'same'}:
-            raise Exception(
-                'Invalid border mode for Convolution3D:', border_mode)
+            raise Exception('Invalid border mode for Convolution3D:', border_mode)
         self.nb_filter = nb_filter
         self.nb_time = nb_time
         self.nb_row = nb_row
         self.nb_col = nb_col
         self.init = initializations.get(init)
         self.activation = activations.get(activation)
-        assert border_mode in {
-            'valid', 'same'}, 'border_mode must be in {valid, same}'
+        assert border_mode in {'valid', 'same'}, 'border_mode must be in {valid, same}'
         self.border_mode = border_mode
         self.subsample = tuple(subsample)
         assert dim_ordering in {'tf', 'th'}, 'dim_ordering must be in {tf, th}'
@@ -546,8 +539,7 @@ class _Pooling1D(Layer):
         self.st = (self.stride, 1)
         self.input = K.placeholder(ndim=3)
         self.pool_size = (pool_length, 1)
-        assert border_mode in {
-            'valid', 'same'}, 'border_mode must be in {valid, same}'
+        assert border_mode in {'valid', 'same'}, 'border_mode must be in {valid, same}'
         self.border_mode = border_mode
 
     @property
@@ -650,8 +642,7 @@ class _Pooling2D(Layer):
         if strides is None:
             strides = self.pool_size
         self.strides = tuple(strides)
-        assert border_mode in {
-            'valid', 'same'}, 'border_mode must be in {valid, same}'
+        assert border_mode in {'valid', 'same'}, 'border_mode must be in {valid, same}'
         self.border_mode = border_mode
         assert dim_ordering in {'tf', 'th'}, 'dim_ordering must be in {tf, th}'
         self.dim_ordering = dim_ordering
@@ -791,8 +782,7 @@ class _Pooling3D(Layer):
         if strides is None:
             strides = self.pool_size
         self.strides = tuple(strides)
-        assert border_mode in {
-            'valid', 'same'}, 'border_mode must be in {valid, same}'
+        assert border_mode in {'valid', 'same'}, 'border_mode must be in {valid, same}'
         self.border_mode = border_mode
         assert dim_ordering in {'tf', 'th'}, 'dim_ordering must be in {tf, th}'
         self.dim_ordering = dim_ordering
