@@ -230,8 +230,7 @@ class Convolution2D(Layer):
                  W_constraint=None, b_constraint=None, **kwargs):
 
         if border_mode not in {'valid', 'same'}:
-            raise Exception(
-                'Invalid border mode for Convolution2D:', border_mode)
+            raise Exception('Invalid border mode for Convolution2D:', border_mode)
         self.nb_filter = nb_filter
         self.nb_row = nb_row
         self.nb_col = nb_col

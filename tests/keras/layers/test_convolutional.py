@@ -324,12 +324,10 @@ def test_upsampling_2d():
                     # compare with numpy
                     if dim_ordering == 'th':
                         expected_out = np.repeat(input, length_row, axis=2)
-                        expected_out = np.repeat(expected_out, length_col,
-                                                 axis=3)
+                        expected_out = np.repeat(expected_out, length_col, axis=3)
                     else:  # tf
                         expected_out = np.repeat(input, length_row, axis=1)
-                        expected_out = np.repeat(expected_out, length_col,
-                                                 axis=2)
+                        expected_out = np.repeat(expected_out, length_col, axis=2)
 
                     assert_allclose(out, expected_out)
 
@@ -372,19 +370,13 @@ def test_upsampling_3d():
 
                         # compare with numpy
                         if dim_ordering == 'th':
-                            expected_out = np.repeat(
-                                input, length_time, axis=2)
-                            expected_out = np.repeat(expected_out, length_row,
-                                                     axis=3)
-                            expected_out = np.repeat(expected_out, length_col,
-                                                     axis=4)
+                            expected_out = np.repeat(input, length_time, axis=2)
+                            expected_out = np.repeat(expected_out, length_row, axis=3)
+                            expected_out = np.repeat(expected_out, length_col, axis=4)
                         else:  # tf
-                            expected_out = np.repeat(
-                                input, length_time, axis=1)
-                            expected_out = np.repeat(expected_out, length_row,
-                                                     axis=2)
-                            expected_out = np.repeat(expected_out, length_col,
-                                                     axis=3)
+                            expected_out = np.repeat(input, length_time, axis=1)
+                            expected_out = np.repeat(expected_out, length_row, axis=2)
+                            expected_out = np.repeat(expected_out, length_col, axis=3)
 
                         assert_allclose(out, expected_out)
 
