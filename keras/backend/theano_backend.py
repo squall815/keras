@@ -51,6 +51,9 @@ def placeholder(shape=None, ndim=None, dtype=_FLOATX, name=None):
         return T.tensor3(name=name, dtype=dtype)
     elif ndim == 4:
         return T.tensor4(name=name, dtype=dtype)
+    elif ndim == 5:
+        dtensor5 = T.TensorType(dtype, (False,)*5)
+        return dtensor5(name)
     else:
         raise Exception('ndim too large: ' + str(ndim))
 
