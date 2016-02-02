@@ -84,8 +84,7 @@ def test_convolution_2d():
     input_nb_row = 11
     input_nb_col = 12
 
-    weights_in = [
-        np.ones((nb_filter, stack_size, nb_row, nb_col)), np.ones(nb_filter)]
+    weights_in = [np.ones((nb_filter, stack_size, nb_row, nb_col)), np.ones(nb_filter)]
 
     input = np.ones((nb_samples, stack_size, input_nb_row, input_nb_col))
     for weight in [None, weights_in]:

@@ -3,7 +3,6 @@ from theano import tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 from theano.tensor.signal import downsample
 from theano.tensor.nnet import conv3d2d
-
 import numpy as np
 from .common import _FLOATX, _EPSILON
 
