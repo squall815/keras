@@ -61,11 +61,11 @@ nb_pool = [3, 3]
 nb_conv = [7, 3]
 
 model = Sequential()
-model.add(Convolution3D(nb_filters[0],nb_depth=nb_conv[0], nb_row=nb_conv[0], nb_col=nb_conv[0], border_mode='valid',
+model.add(Convolution3D(nb_filters[0],nb_time=nb_conv[0], nb_row=nb_conv[0], nb_col=nb_conv[0], border_mode='valid',
                         input_shape=(1, patch_size, patch_size, patch_size), activation='relu'))
 model.add(MaxPooling3D(pool_size=(nb_pool[0], nb_pool[0], nb_pool[0])))
 model.add(Dropout(0.5))
-model.add(Convolution3D(nb_filters[1],nb_depth=nb_conv[1], nb_row=nb_conv[1], nb_col=nb_conv[1], border_mode='valid',
+model.add(Convolution3D(nb_filters[1],nb_time=nb_conv[1], nb_row=nb_conv[1], nb_col=nb_conv[1], border_mode='valid',
                         activation='relu'))
 model.add(MaxPooling3D(pool_size=(nb_pool[1], nb_pool[1], nb_pool[1])))
 model.add(Flatten())
