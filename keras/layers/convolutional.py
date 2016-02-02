@@ -348,7 +348,7 @@ class Convolution3D(Layer):
     When using this layer as the first layer in a model,
     provide the keyword argument `input_shape`
     (tuple of integers, does not include the sample axis),
-    e.g. `input_shape=(3, 10, 128, 128)` for 10 time frames of 128x128 RGB pictures.
+    e.g. `input_shape=(3, 10, 128, 128)` for 10 frames of 128x128 RGB pictures.
     # Input shape
         5D tensor with shape:
         `(samples, channels, time, rows, cols)` if dim_ordering='th'
@@ -362,6 +362,7 @@ class Convolution3D(Layer):
         `rows` and `cols` values might have changed due to padding.
     # Arguments
         nb_filter: Number of convolution filters to use.
+        nb_time: Number of time frames(or volume depth) in the covolution kernel.
         nb_row: Number of rows in the convolution kernel.
         nb_col: Number of columns in the convolution kernel.
         init: name of initialization function for the weights of the layer
@@ -837,7 +838,7 @@ class _Pooling3D(Layer):
 
 
 class MaxPooling3D(_Pooling3D):
-    '''Max pooling operation for spatial data.
+    '''Max pooling operation for spatial-temporal data.
     # Input shape
         5D tensor with shape:
         `(samples, channels, time, rows, cols)` if dim_ordering='th'
@@ -850,8 +851,8 @@ class MaxPooling3D(_Pooling3D):
         `(samples, pooled_time, pooled_rows, pooled_cols, channels)` if dim_ordering='tf'.
     # Arguments
         pool_size: tuple of 3 integers,
-            factors by which to downscale (vertical, horizontal).
-            (2, 2, 2) will halve the image in each dimension.
+            factors by which to downscale (temporal, vertical, horizontal).
+            (2, 2, 2) will halve the movie(or 3D volume) in each dimension.
         strides: tuple of 2 integers, or None. Strides values.
         border_mode: 'valid' or 'same'.
             Note: 'same' will only work with TensorFlow for the time being.
@@ -872,7 +873,7 @@ class MaxPooling3D(_Pooling3D):
 
 
 class AveragePooling3D(_Pooling3D):
-    '''Average pooling operation for spatial data.
+    '''Average pooling operation for spatial-temporal data.
     # Input shape
         5D tensor with shape:
         `(samples, channels, time, rows, cols)` if dim_ordering='th'
@@ -885,8 +886,8 @@ class AveragePooling3D(_Pooling3D):
         `(samples, pooled_time, pooled_rows, pooled_cols, channels)` if dim_ordering='tf'.
     # Arguments
         pool_size: tuple of 3 integers,
-            factors by which to downscale (vertical, horizontal).
-            (2, 2, 2) will halve the image in each dimension.
+            factors by which to downscale (temporal, vertical, horizontal).
+            (2, 2, 2) will halve the movie(or 3D volume) in each dimension.
         strides: tuple of 2 integers, or None. Strides values.
         border_mode: 'valid' or 'same'.
             Note: 'same' will only work with TensorFlow for the time being.
@@ -1152,7 +1153,7 @@ class ZeroPadding2D(Layer):
 
 
 class ZeroPadding3D(Layer):
-    '''Zero-padding layer for 3D input (e.g. picture).
+    '''Zero-padding layer for 3D input (e.g. movie, 3D volume).
 
     # Input shape
         5D tensor with shape:
