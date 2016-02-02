@@ -277,6 +277,27 @@ def resize_images(X, height_factor, width_factor, dim_ordering):
     else:
         raise Exception('Invalid dim_ordering: ' + dim_ordering)
 
+        
+def resize_volumes(X, depth_factor, height_factor, width_factor, dim_ordering):
+    '''Resize the volume contained in a 5D tensor of shape
+    - [batch, channels, depth, height, width] (for 'th' dim_ordering)
+    - [batch, depth, height, width, channels] (for 'tf' dim_ordering)
+    by a factor of (depth_factor, height_factor, width_factor). Both factors should be
+    positive integers.
+    '''
+    if dim_ordering == 'th':
+        output = repeat_elements(X, depth_factor, axis=2)
+        output = repeat_elements(output, height_factor, axis=3)
+        output = repeat_elements(output, width_factor, axis=4)
+        return output
+    elif dim_ordering == 'tf':
+        output = repeat_elements(X, depth_factor, axis=1)
+        output = repeat_elements(output, height_factor, axis=2)
+        output = repeat_elements(output, width_factor, axis=3)
+        return output
+    else:
+        raise Exception('Invalid dim_ordering: ' + dim_ordering)
+
 
 def repeat(x, n):
     '''Repeat a 2D tensor.
@@ -369,6 +390,42 @@ def spatial_2d_padding(x, padding=(1, 1), dim_ordering='th'):
     else:
         raise Exception('Invalid dim_ordering: ' + dim_ordering)
     return T.set_subtensor(output[indices], x)
+
+
+def spatial_3d_padding(x, padding=(1, 1, 1), dim_ordering='th'):
+    '''Pad the 2nd, 3rd and 4th dimensions of a 5D tensor
+    with "padding[0]", "padding[1]" and "padding[1]" (resp.) zeros left and right.
+    '''
+    input_shape = x.shape
+    if dim_ordering == 'th':
+        output_shape = (input_shape[0],
+                        input_shape[1],
+                        input_shape[2] + 2 * padding[0],
+                        input_shape[3] + 2 * padding[1],
+                        input_shape[4] + 2 * padding[2])
+        output = T.zeros(output_shape)
+        indices = (slice(None),
+                   slice(None),
+                   slice(padding[0], input_shape[2] + padding[0]),
+                   slice(padding[1], input_shape[3] + padding[1]),
+                   slice(padding[2], input_shape[4] + padding[2]))
+
+    elif dim_ordering == 'tf':
+        output_shape = (input_shape[0],
+                        input_shape[1] + 2 * padding[0],
+                        input_shape[2] + 2 * padding[1],
+                        input_shape[3] + 2 * padding[2],
+                        input_shape[4])
+        output = T.zeros(output_shape)
+        indices = (slice(None),
+                   slice(padding[0], input_shape[1] + padding[0]),
+                   slice(padding[1], input_shape[2] + padding[1]),
+                   slice(padding[2], input_shape[3] + padding[2]),
+                   slice(None))
+    else:
+        raise Exception('Invalid dim_ordering: ' + dim_ordering)
+    return T.set_subtensor(output[indices], x)
+
 
 # VALUE MANIPULATION
 
@@ -658,16 +715,43 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
         if filter_shape:
             filter_shape = (filter_shape[4], filter_shape[3],
                             filter_shape[0], filter_shape[1], filter_shape[2])
-
-    # Shuffle the dimensions as per the input parameter order, restore it once done
+            
+    if border_mode == 'same':
+        assert(strides == (1, 1, 1))
+        pad_z = (kernel.shape[2] - 1)
+        pad_x = (kernel.shape[3] - 1)
+        pad_y = (kernel.shape[4] - 1)
+        output_shape = (x.shape[0], x.shape[1],
+                        x.shape[2] + pad_z,
+                        x.shape[3] + pad_x,
+                        x.shape[4] + pad_y)
+        output = T.zeros(output_shape)
+        indices = (slice(None), slice(None),
+                   slice(pad_z//2, x.shape[2] + pad_z//2),
+                   slice(pad_x//2, x.shape[3] + pad_x//2),
+                   slice(pad_y//2, x.shape[4] + pad_y//2))
+        x = T.set_subtensor(output[indices], x)
+        border_mode = 'valid'
+        
+    # there are two implementations available in theano
+    # here we use conv3d2d.conv3d for both GPU and CPU, because it's faster.
+    # and note that it will flips the filters
+    # testing code: `attachment <https://groups.google.com/d/msg/theano-users/1S9_bZgHxVw/0cQR9a4riFUJ>`_
+    # on CPU:
+    #    conv3d2d.conv3d:    160 ms per loop
+    #    nnet.Conv3D.conv3D: 1.19 s per loop
+    # on GPU (k40):
+    #    conv3d2d.conv3d:    36.2 ms per loop
+    #    nnet.Conv3D.conv3D: 941 ms per loop
+    # also notice that there are precision differences with conv3d2d.conv3d on GPU and CPU
     conv_out = conv3d2d.conv3d(signals=x.dimshuffle(0, 2, 1, 3, 4),
                                filters=kernel.dimshuffle(0, 2, 1, 3, 4),
                                border_mode=border_mode)
-
     conv_out = conv_out.dimshuffle(0, 2, 1, 3, 4)
 
     if dim_ordering == 'tf':
         conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
+        
     return conv_out
 
 
