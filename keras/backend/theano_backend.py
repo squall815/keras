@@ -739,10 +739,10 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
     # testing code: `attachment <https://groups.google.com/d/msg/theano-users/1S9_bZgHxVw/0cQR9a4riFUJ>`_
     # on CPU:
     #    conv3d2d.conv3d:    160 ms per loop
-    #    nnet.Conv3D.conv3D: 1.19 s per loop
+    #    nnet.conv3D: 1.19 s per loop
     # on GPU (k40):
     #    conv3d2d.conv3d:    36.2 ms per loop
-    #    nnet.Conv3D.conv3D: 941 ms per loop
+    #    nnet.conv3D: 941 ms per loop
     # also notice that there are precision differences with conv3d2d.conv3d on GPU and CPU
     conv_out = conv3d2d.conv3d(signals=x.dimshuffle(0, 2, 1, 3, 4),
                                filters=kernel.dimshuffle(0, 2, 1, 3, 4),
