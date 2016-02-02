@@ -148,7 +148,7 @@ def test_averagepooling_2d():
             K.eval(layer.get_output(train))
         layer.get_config()
 
-
+@pytest.mark.skipif(K._BACKEND != 'theano', reason="Requires Theano backend")
 def test_convolution_3d():
     nb_samples = 8
     nb_filter = 9
@@ -189,7 +189,8 @@ def test_convolution_3d():
                                     assert out.shape[2:] == input.shape[2:]
                             layer.get_config()
                             
-
+                            
+@pytest.mark.skipif(K._BACKEND != 'theano', reason="Requires Theano backend")
 def test_maxpooling_3d():
     nb_samples = 9
     stack_size = 7
@@ -207,8 +208,9 @@ def test_maxpooling_3d():
         for train in [True, False]:
             K.eval(layer.get_output(train))
         layer.get_config()
+
         
-        
+@pytest.mark.skipif(K._BACKEND != 'theano', reason="Requires Theano backend")
 def test_averagepooling_3d():
     nb_samples = 9
     stack_size = 7
@@ -246,6 +248,7 @@ def test_zero_padding_2d():
     layer.get_config()
 
     
+@pytest.mark.skipif(K._BACKEND != 'theano', reason="Requires Theano backend")
 def test_zero_padding_3d():
     nb_samples = 9
     stack_size = 7
@@ -326,6 +329,7 @@ def test_upsampling_2d():
                     layer.get_config()
 
 
+@pytest.mark.skipif(K._BACKEND != 'theano', reason="Requires Theano backend")
 def test_upsampling_3d():
     nb_samples = 9
     stack_size = 7
