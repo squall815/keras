@@ -149,6 +149,85 @@ def test_averagepooling_2d():
         layer.get_config()
 
 
+def test_convolution_3d():
+    nb_samples = 8
+    nb_filter = 9
+    stack_size = 7
+    nb_time = 2
+    nb_row = 10
+    nb_col = 6
+
+    input_nb_time = 10
+    input_nb_row = 11
+    input_nb_col = 12
+
+    weights_in = [np.ones((nb_filter, stack_size, nb_time, nb_row, nb_col)), np.ones(nb_filter)]
+
+    input = np.ones((nb_samples, stack_size, input_nb_time, input_nb_row, input_nb_col))
+    for weight in [None, weights_in]:
+        for border_mode in ['same', 'valid']:
+            for subsample in [(1, 1, 1), (2, 2, 2)]:
+                if border_mode == 'same' and subsample != (1, 1, 1):
+                    continue
+                for W_regularizer in [None, 'l2']:
+                    for b_regularizer in [None, 'l2']:
+                        for act_regularizer in [None, 'l2']:
+                            layer = convolutional.Convolution3D(
+                                nb_filter,nb_time, nb_row, nb_col,
+                                weights=weight,
+                                border_mode=border_mode,
+                                W_regularizer=W_regularizer,
+                                b_regularizer=b_regularizer,
+                                activity_regularizer=act_regularizer,
+                                subsample=subsample,
+                                input_shape=(stack_size, None, None, None))
+
+                            layer.input = K.variable(input)
+                            for train in [True, False]:
+                                out = K.eval(layer.get_output(train))
+                                if border_mode == 'same' and subsample == (1, 1, 1):
+                                    assert out.shape[2:] == input.shape[2:]
+                            layer.get_config()
+                            
+
+def test_maxpooling_3d():
+    nb_samples = 9
+    stack_size = 7
+    input_nb_time = 10
+    input_nb_row = 11
+    input_nb_col = 12
+    pool_size = (3, 3, 3)
+
+    input = np.ones((nb_samples, stack_size, input_nb_time, input_nb_row, input_nb_col))
+    for strides in [(1, 1, 1), (2, 2, 2)]:
+        layer = convolutional.MaxPooling3D(strides=strides,
+                                           border_mode='valid',
+                                           pool_size=pool_size)
+        layer.input = K.variable(input)
+        for train in [True, False]:
+            K.eval(layer.get_output(train))
+        layer.get_config()
+        
+        
+def test_averagepooling_3d():
+    nb_samples = 9
+    stack_size = 7
+    input_nb_time = 10
+    input_nb_row = 11
+    input_nb_col = 12
+    pool_size = (3, 3, 3)
+
+    input = np.ones((nb_samples, stack_size, input_nb_time, input_nb_row, input_nb_col))
+    for strides in [(1, 1, 1), (2, 2, 2)]:
+        layer = convolutional.AveragePooling3D(strides=strides,
+                                               border_mode='valid',
+                                               pool_size=pool_size)
+        layer.input = K.variable(input)
+        for train in [True, False]:
+            K.eval(layer.get_output(train))
+        layer.get_config()
+        
+
 def test_zero_padding_2d():
     nb_samples = 9
     stack_size = 7
@@ -166,6 +245,26 @@ def test_zero_padding_2d():
         assert_allclose(out[:, :, 2:-2, 2:-2], 1.)
     layer.get_config()
 
+    
+def test_zero_padding_3d():
+    nb_samples = 9
+    stack_size = 7
+    input_nb_time = 10
+    input_nb_row = 11
+    input_nb_col = 12
+
+    input = np.ones((nb_samples, stack_size, input_nb_time, input_nb_row, input_nb_col))
+    layer = convolutional.ZeroPadding3D(padding=(2, 2, 2))
+    layer.input = K.variable(input)
+    for train in [True, False]:
+        out = K.eval(layer.get_output(train))
+        for offset in [0, 1, -1, -2]:
+            assert_allclose(out[:, :, offset, :, :], 0.)
+            assert_allclose(out[:, :, :, offset, :], 0.)
+            assert_allclose(out[:, :, :, :, offset], 0.)
+        assert_allclose(out[:, :, 2:-2, 2:-2, 2:-2], 1.)
+    layer.get_config()
+    
 
 def test_upsampling_1d():
     nb_samples = 9
@@ -227,5 +326,57 @@ def test_upsampling_2d():
                     layer.get_config()
 
 
+def test_upsampling_3d():
+    nb_samples = 9
+    stack_size = 7
+    input_nb_time = 10
+    input_nb_row = 11
+    input_nb_col = 12
+
+    for dim_ordering in ['th', 'tf']:
+        if dim_ordering == 'th':
+            input = np.random.rand(nb_samples, stack_size, input_nb_time, input_nb_row,
+                                   input_nb_col)
+        else:  # tf
+            input = np.random.rand(nb_samples, input_nb_time, input_nb_row, input_nb_col,
+                                   stack_size)
+        for length_time in [2, 3, 9]:
+            for length_row in [2, 3, 9]:
+                for length_col in [2, 3, 9]:
+                        layer = convolutional.UpSampling3D(
+                            size=(length_time, length_row, length_col),
+                            input_shape=input.shape[1:],
+                            dim_ordering=dim_ordering)
+                        layer.input = K.variable(input)
+                        for train in [True, False]:
+                            out = K.eval(layer.get_output(train))
+                            if dim_ordering == 'th':
+                                assert out.shape[2] == length_time * input_nb_time
+                                assert out.shape[3] == length_row * input_nb_row
+                                assert out.shape[4] == length_col * input_nb_col
+                            else:  # tf
+                                assert out.shape[1] == length_time * input_nb_time
+                                assert out.shape[2] == length_row * input_nb_row
+                                assert out.shape[3] == length_col * input_nb_col
+
+                            # compare with numpy
+                            if dim_ordering == 'th':
+                                expected_out = np.repeat(input, length_time, axis=2)
+                                expected_out = np.repeat(expected_out, length_row,
+                                                         axis=3)
+                                expected_out = np.repeat(expected_out, length_col,
+                                                         axis=4)
+                            else:  # tf
+                                expected_out = np.repeat(input, length_time, axis=1)
+                                expected_out = np.repeat(expected_out, length_row,
+                                                         axis=2)
+                                expected_out = np.repeat(expected_out, length_col,
+                                                         axis=3)
+
+                            assert_allclose(out, expected_out)
+
+                        layer.get_config()
+                    
+                    
 if __name__ == '__main__':
     pytest.main([__file__])
