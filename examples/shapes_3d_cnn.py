@@ -1,5 +1,3 @@
-__author__ = 'Minhaz Palasara'
-
 from keras.datasets import shapes_3d
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
@@ -9,6 +7,7 @@ from keras.optimizers import SGD, RMSprop
 from keras.utils import np_utils, generic_utils
 import theano
 
+__author__ = 'Minhaz Palasara'
 
 """
     To classify/track 3D shapes, such as human hands (http://www.dbs.ifi.lmu.de/~yu_k/icml2010_3dcnn.pdf),
@@ -34,9 +33,9 @@ test_split = 0.2
 dataset_size = 5000
 patch_size = 32
 
-(X_train, Y_train),(X_test, Y_test) = shapes_3d.load_data(test_split=test_split,
-                                                          dataset_size=dataset_size,
-                                                          patch_size=patch_size)
+(X_train, Y_train), (X_test, Y_test) = shapes_3d.load_data(test_split=test_split,
+                                                           dataset_size=dataset_size,
+                                                           patch_size=patch_size)
 
 print('X_train shape:', X_train.shape)
 print(X_train.shape[0], 'train samples')
@@ -61,11 +60,11 @@ nb_pool = [3, 3]
 nb_conv = [7, 3]
 
 model = Sequential()
-model.add(Convolution3D(nb_filters[0],nb_time=nb_conv[0], nb_row=nb_conv[0], nb_col=nb_conv[0], border_mode='valid',
+model.add(Convolution3D(nb_filters[0], nb_time=nb_conv[0], nb_row=nb_conv[0], nb_col=nb_conv[0], border_mode='valid',
                         input_shape=(1, patch_size, patch_size, patch_size), activation='relu'))
 model.add(MaxPooling3D(pool_size=(nb_pool[0], nb_pool[0], nb_pool[0])))
 model.add(Dropout(0.5))
-model.add(Convolution3D(nb_filters[1],nb_time=nb_conv[1], nb_row=nb_conv[1], nb_col=nb_conv[1], border_mode='valid',
+model.add(Convolution3D(nb_filters[1], nb_time=nb_conv[1], nb_row=nb_conv[1], nb_col=nb_conv[1], border_mode='valid',
                         activation='relu'))
 model.add(MaxPooling3D(pool_size=(nb_pool[1], nb_pool[1], nb_pool[1])))
 model.add(Flatten())
@@ -79,8 +78,7 @@ model.compile(loss='categorical_crossentropy', optimizer=sgd)
 
 model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch, show_accuracy=True, verbose=2,
           validation_data=(X_test, Y_test))
-score = model.evaluate(X_test, Y_test, batch_size=batch_size, show_accuracy=True)
+score = model.evaluate(
+    X_test, Y_test, batch_size=batch_size, show_accuracy=True)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
-
-

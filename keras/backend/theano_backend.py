@@ -52,7 +52,7 @@ def placeholder(shape=None, ndim=None, dtype=_FLOATX, name=None):
     elif ndim == 4:
         return T.tensor4(name=name, dtype=dtype)
     elif ndim == 5:
-        dtensor5 = T.TensorType(dtype, (False,)*5)
+        dtensor5 = T.TensorType(dtype, (False,) * 5)
         return dtensor5(name)
     else:
         raise Exception('ndim too large: ' + str(ndim))
@@ -277,7 +277,7 @@ def resize_images(X, height_factor, width_factor, dim_ordering):
     else:
         raise Exception('Invalid dim_ordering: ' + dim_ordering)
 
-        
+
 def resize_volumes(X, depth_factor, height_factor, width_factor, dim_ordering):
     '''Resize the volume contained in a 5D tensor of shape
     - [batch, channels, depth, height, width] (for 'th' dim_ordering)
@@ -507,7 +507,7 @@ def rnn(step_function, inputs, initial_states,
     if mask is None:
         mask = expand_dims(ones_like(T.sum(inputs, axis=-1)))
     else:
-        if mask.ndim == ndim-1:
+        if mask.ndim == ndim - 1:
             mask = expand_dims(mask)
         assert mask.ndim == ndim
         mask = mask.dimshuffle(axes)
@@ -702,7 +702,7 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
     '''
     if dim_ordering not in {'th', 'tf'}:
         raise Exception('Unknown dim_ordering ' + str(dim_ordering))
-           
+
     if dim_ordering == 'tf':
         # TF uses the last dimension as channel dimension,
         # instead of the 2nd one.
@@ -718,7 +718,7 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
         if filter_shape:
             filter_shape = (filter_shape[4], filter_shape[3],
                             filter_shape[0], filter_shape[1], filter_shape[2])
-            
+
     if border_mode == 'same':
         assert(strides == (1, 1, 1))
         pad_t = (kernel.shape[2] - 1)
@@ -730,12 +730,12 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
                         x.shape[4] + pad_y)
         output = T.zeros(output_shape)
         indices = (slice(None), slice(None),
-                   slice(pad_t//2, x.shape[2] + pad_t//2),
-                   slice(pad_x//2, x.shape[3] + pad_x//2),
-                   slice(pad_y//2, x.shape[4] + pad_y//2))
+                   slice(pad_t // 2, x.shape[2] + pad_t // 2),
+                   slice(pad_x // 2, x.shape[3] + pad_x // 2),
+                   slice(pad_y // 2, x.shape[4] + pad_y // 2))
         x = T.set_subtensor(output[indices], x)
         border_mode = 'valid'
-        
+
     # there are two implementations available in theano
     # here we use conv3d2d.conv3d for both GPU and CPU, because it's faster.
     # and note that it will flips the filters
@@ -746,7 +746,8 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
     # on GPU (k40):
     #    conv3d2d.conv3d:    36.2 ms per loop
     #    nnet.conv3D: 941 ms per loop
-    # also notice that there are precision differences with conv3d2d.conv3d on GPU and CPU
+    # also notice that there are precision differences with conv3d2d.conv3d on
+    # GPU and CPU
     conv_out = conv3d2d.conv3d(signals=x.dimshuffle(0, 2, 1, 3, 4),
                                filters=kernel.dimshuffle(0, 2, 1, 3, 4),
                                border_mode=border_mode)
@@ -754,9 +755,8 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
 
     if dim_ordering == 'tf':
         conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
-        
-    return conv_out
 
+    return conv_out
 
 
 def pool2d(x, pool_size, strides=(1, 1), border_mode='valid',
@@ -821,11 +821,11 @@ def pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
 
         # max_pool_2d X and Y, X constant
         pool_out = downsample.max_pool_2d(input=output.dimshuffle(0, 1, 4, 3, 2),
-                                        ds=(1, pool_size[2]),
-                                        ignore_border=ignore_border,
-                                        padding=padding,
-                                        mode='max')
-        
+                                          ds=(1, pool_size[2]),
+                                          ignore_border=ignore_border,
+                                          padding=padding,
+                                          mode='max')
+
     elif pool_mode == 'avg':
         # pooling over X, Z (last two channels)
         output = downsample.max_pool_2d(input=x.dimshuffle(0, 1, 4, 3, 2),
@@ -836,10 +836,10 @@ def pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
 
         # max_pool_2d X and Y, X constant
         pool_out = downsample.max_pool_2d(input=output.dimshuffle(0, 1, 4, 3, 2),
-                                        ds=(1, pool_size[2]),
-                                        ignore_border=ignore_border,
-                                        padding=padding,
-                                        mode='average_exc_pad')
+                                          ds=(1, pool_size[2]),
+                                          ignore_border=ignore_border,
+                                          padding=padding,
+                                          mode='average_exc_pad')
     else:
         raise Exception('Invalid pooling mode: ' + str(pool_mode))
 
