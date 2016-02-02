@@ -355,9 +355,9 @@ class Convolution3D(Layer):
         or 5D tensor with shape:
         `(samples, time, rows, cols, channels)` if dim_ordering='tf'.
     # Output shape
-        4D tensor with shape:
+        5D tensor with shape:
         `(samples, nb_filter, new_time, new_rows, new_cols)` if dim_ordering='th'
-        or 4D tensor with shape:
+        or 5D tensor with shape:
         `(samples, new_time, new_rows, new_cols, nb_filter)` if dim_ordering='tf'.
         `rows` and `cols` values might have changed due to padding.
     # Arguments
@@ -503,7 +503,6 @@ class Convolution3D(Layer):
     def get_config(self):
           return {"name": self.__class__.__name__,
                    "nb_filter": self.nb_filter,
-                   "stack_size": self.stack_size,
                    "nb_time": self.nb_time,
                    "nb_row": self.nb_row,
                    "nb_col": self.nb_col,
@@ -517,7 +516,6 @@ class Convolution3D(Layer):
                    "activity_regularizer": self.activity_regularizer.get_config() if self.activity_regularizer else None,
                    "W_constraint": self.W_constraint.get_config() if self.W_constraint else None,
                    "b_constraint": self.b_constraint.get_config() if self.b_constraint else None}
-
 
 
 class _Pooling1D(Layer):
@@ -825,7 +823,7 @@ class _Pooling3D(Layer):
                   'border_mode': self.border_mode,
                   'strides': self.strides,
                   'dim_ordering': self.dim_ordering}
-        base_config = super(_Pooling2D, self).get_config()
+        base_config = super(_Pooling3D, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
 
@@ -991,6 +989,63 @@ class UpSampling2D(Layer):
         base_config = super(UpSampling2D, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
+class UpSampling3D(Layer):
+    '''Repeat the time, rows and columns of the data
+    by size[0], size[1] and size[2] respectively.
+    # Input shape
+        5D tensor with shape:
+        `(samples, channels, time, rows, cols)` if dim_ordering='th'
+        or 5D tensor with shape:
+        `(samples, time, rows, cols, channels)` if dim_ordering='tf'.
+    # Output shape
+        5D tensor with shape:
+        `(samples, channels, upsampled_time, upsampled_rows, upsampled_cols)` if dim_ordering='th'
+        or 5D tensor with shape:
+        `(samples, upsampled_time, upsampled_rows, upsampled_cols, channels)` if dim_ordering='tf'.
+    # Arguments
+        size: tuple of 3 integers. The upsampling factors for time, rows and columns.
+        dim_ordering: 'th' or 'tf'.
+            In 'th' mode, the channels dimension (the depth)
+            is at index 1, in 'tf' mode is it at index 4.
+    '''
+    input_ndim = 5
+
+    def __init__(self, size=(2, 2, 2), dim_ordering='th', **kwargs):
+        super(UpSampling3D, self).__init__(**kwargs)
+        self.input = K.placeholder(ndim=5)
+        self.size = tuple(size)
+        assert dim_ordering in {'tf', 'th'}, 'dim_ordering must be in {tf, th}'
+        self.dim_ordering = dim_ordering
+
+    @property
+    def output_shape(self):
+        input_shape = self.input_shape
+        if self.dim_ordering == 'th':
+            return (input_shape[0],
+                    input_shape[1],
+                    self.size[0] * input_shape[2],
+                    self.size[1] * input_shape[3],
+                    self.size[2] * input_shape[4])
+        elif self.dim_ordering == 'tf':
+            return (input_shape[0],
+                    self.size[0] * input_shape[1],
+                    self.size[1] * input_shape[2],
+                    self.size[2] * input_shape[3],
+                    input_shape[4])
+        else:
+            raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
+
+    def get_output(self, train=False):
+        X = self.get_input(train)
+        return K.resize_volumes(X, self.size[0], self.size[1], self.size[2],
+                               self.dim_ordering)
+
+    def get_config(self):
+        config = {'name': self.__class__.__name__,
+                  'size': self.size}
+        base_config = super(UpSampling3D, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+    
 
 class ZeroPadding1D(Layer):
     '''Zero-padding layer for 1D input (e.g. temporal sequence).
@@ -1082,3 +1137,59 @@ class ZeroPadding2D(Layer):
                   'padding': self.padding}
         base_config = super(ZeroPadding2D, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
+    
+    
+class ZeroPadding3D(Layer):
+    '''Zero-padding layer for 3D input (e.g. picture).
+
+    # Input shape
+        5D tensor with shape:
+        (samples, depth, first_axis_to_pad, second_axis_to_pad, third_axis_to_pad)
+
+    # Output shape
+        5D tensor with shape:
+        (samples, depth, first_padded_axis, second_padded_axis, third_axis_to_pad)
+
+    # Arguments
+        padding: tuple of int (length 3)
+            How many zeros to add at the beginning and end of
+            the 3 padding dimensions (axis 3, 4 and 5).
+    '''
+    input_ndim = 5
+
+    def __init__(self, padding=(1, 1, 1), dim_ordering='th', **kwargs):
+        super(ZeroPadding3D, self).__init__(**kwargs)
+        self.padding = tuple(padding)
+        self.input = K.placeholder(ndim=5)
+        assert dim_ordering in {'tf', 'th'}, 'dim_ordering must be in {tf, th}'
+        self.dim_ordering = dim_ordering
+
+    @property
+    def output_shape(self):
+        input_shape = self.input_shape
+        if self.dim_ordering == 'th':
+            return (input_shape[0],
+                    input_shape[1],
+                    input_shape[2] + 2 * self.padding[0],
+                    input_shape[3] + 2 * self.padding[1],
+                    input_shape[4] + 2 * self.padding[2])
+        elif self.dim_ordering == 'tf':
+            return (input_shape[0],
+                    input_shape[1] + 2 * self.padding[0],
+                    input_shape[2] + 2 * self.padding[1],
+                    input_shape[3] + 2 * self.padding[2],
+                    input_shape[4])
+        else:
+            raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
+
+    def get_output(self, train=False):
+        X = self.get_input(train)
+        return K.spatial_3d_padding(X, padding=self.padding,
+                                    dim_ordering=self.dim_ordering)
+
+    def get_config(self):
+        config = {'name': self.__class__.__name__,
+                  'padding': self.padding}
+        base_config = super(ZeroPadding3D, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
