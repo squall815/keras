@@ -803,6 +803,7 @@ def pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
         # pooling over X, Z (last two channels)
         output = downsample.max_pool_2d(input=x.dimshuffle(0, 1, 4, 3, 2),
                                         ds=(pool_size[1], pool_size[0]),
+                                        st=(strides[1], strides[0]),
                                         ignore_border=ignore_border,
                                         padding=padding,
                                         mode='max')
@@ -810,6 +811,7 @@ def pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
         # max_pool_2d X and Y, X constant
         pool_out = downsample.max_pool_2d(input=output.dimshuffle(0, 1, 4, 3, 2),
                                           ds=(1, pool_size[2]),
+                                          st=(1, strides[2]),
                                           ignore_border=ignore_border,
                                           padding=padding,
                                           mode='max')
@@ -818,6 +820,7 @@ def pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
         # pooling over X, Z (last two channels)
         output = downsample.max_pool_2d(input=x.dimshuffle(0, 1, 4, 3, 2),
                                         ds=(pool_size[1], pool_size[0]),
+                                        st=(strides[1], strides[0]),
                                         ignore_border=ignore_border,
                                         padding=padding,
                                         mode='average_exc_pad')
@@ -825,6 +828,7 @@ def pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
         # max_pool_2d X and Y, X constant
         pool_out = downsample.max_pool_2d(input=output.dimshuffle(0, 1, 4, 3, 2),
                                           ds=(1, pool_size[2]),
+                                          st=(1, strides[2]),
                                           ignore_border=ignore_border,
                                           padding=padding,
                                           mode='average_exc_pad')
