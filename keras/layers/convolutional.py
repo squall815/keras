@@ -399,7 +399,9 @@ class Convolution3D(Layer):
                  border_mode='valid', subsample=(1, 1, 1), dim_ordering='th',
                  W_regularizer=None, b_regularizer=None, activity_regularizer=None,
                  W_constraint=None, b_constraint=None, **kwargs):
-
+        if K._BACKEND != 'theano':
+            raise Exception(self.__class__.__name__ + 
+                            ' is currently only working with Theano backend.')
         if border_mode not in {'valid', 'same'}:
             raise Exception('Invalid border mode for Convolution3D:', border_mode)
         self.nb_filter = nb_filter
@@ -862,6 +864,9 @@ class MaxPooling3D(_Pooling3D):
 
     def __init__(self, pool_size=(2, 2, 2), strides=None, border_mode='valid',
                  dim_ordering='th', **kwargs):
+        if K._BACKEND != 'theano':
+            raise Exception(self.__class__.__name__ + 
+                            ' is currently only working with Theano backend.')
         super(MaxPooling3D, self).__init__(pool_size, strides, border_mode,
                                            dim_ordering, **kwargs)
 
@@ -897,6 +902,9 @@ class AveragePooling3D(_Pooling3D):
 
     def __init__(self, pool_size=(2, 2, 2), strides=None, border_mode='valid',
                  dim_ordering='th', **kwargs):
+        if K._BACKEND != 'theano':
+            raise Exception(self.__class__.__name__ + 
+                            ' is currently only working with Theano backend.')
         super(AveragePooling3D, self).__init__(pool_size, strides, border_mode,
                                                dim_ordering, **kwargs)
 
@@ -1024,6 +1032,9 @@ class UpSampling3D(Layer):
     input_ndim = 5
 
     def __init__(self, size=(2, 2, 2), dim_ordering='th', **kwargs):
+        if K._BACKEND != 'theano':
+            raise Exception(self.__class__.__name__ + 
+                            ' is currently only working with Theano backend.')
         super(UpSampling3D, self).__init__(**kwargs)
         self.input = K.placeholder(ndim=5)
         self.size = tuple(size)
@@ -1171,6 +1182,9 @@ class ZeroPadding3D(Layer):
     input_ndim = 5
 
     def __init__(self, padding=(1, 1, 1), dim_ordering='th', **kwargs):
+        if K._BACKEND != 'theano':
+            raise Exception(self.__class__.__name__ + 
+                            ' is currently only working with Theano backend.')
         super(ZeroPadding3D, self).__init__(**kwargs)
         self.padding = tuple(padding)
         self.input = K.placeholder(ndim=5)
