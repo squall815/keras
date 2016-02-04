@@ -9,7 +9,7 @@ import warnings
 from collections import deque
 from .utils.generic_utils import Progbar
 from keras import backend as K
-
+import sys
 
 class CallbackList(object):
     def __init__(self, callbacks=[], queue_length=10):
@@ -141,7 +141,8 @@ class BaseLogger(Callback):
 
     def on_epoch_begin(self, epoch, logs={}):
         if self.verbose:
-            print('Epoch %d/%d' % (epoch + 1, self.nb_epoch))
+#            print('Epoch %d/%d' % (epoch + 1, self.nb_epoch))
+            sys.stdout.write('Epoch %d/%d  ' % (epoch + 1, self.nb_epoch))
             self.progbar = Progbar(target=self.params['nb_sample'],
                                    verbose=self.verbose)
         self.seen = 0

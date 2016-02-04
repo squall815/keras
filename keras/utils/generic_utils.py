@@ -26,7 +26,7 @@ def make_tuple(*args):
 
 
 class Progbar(object):
-    def __init__(self, target, width=30, verbose=1):
+    def __init__(self, target, width=15, verbose=1):
         '''
             @param target: total number of steps expected
         '''
@@ -58,7 +58,7 @@ class Progbar(object):
         if self.verbose == 1:
             prev_total_width = self.total_width
             sys.stdout.write("\b" * prev_total_width)
-            sys.stdout.write("\r")
+#            sys.stdout.write("\r")
 
             numdigits = int(np.floor(np.log10(self.target))) + 1
             barstr = '%%%dd/%%%dd [' % (numdigits, numdigits)
@@ -83,9 +83,11 @@ class Progbar(object):
             eta = time_per_unit*(self.target - current)
             info = ''
             if current < self.target:
-                info += ' - ETA: %ds' % eta
+                info += ' - ETA: %4ds' % eta
             else:
-                info += ' - %ds' % (now - self.start)
+                sys.stdout.write("\b" * (self.total_width))
+                self.total_width -= (self.total_width)
+                info += ' - %4ds' % (now - self.start)
             for k in self.unique_values:
                 info += ' - %s:' % k
                 if type(self.sum_values[k]) is list:
