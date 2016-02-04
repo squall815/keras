@@ -42,21 +42,8 @@ def placeholder(shape=None, ndim=None, dtype=_FLOATX, name=None):
         raise Exception('Specify either a shape or ndim value.')
     if shape is not None:
         ndim = len(shape)
-    if ndim == 0:
-        return T.scalar(name=name, dtype=dtype)
-    elif ndim == 1:
-        return T.vector(name=name, dtype=dtype)
-    elif ndim == 2:
-        return T.matrix(name=name, dtype=dtype)
-    elif ndim == 3:
-        return T.tensor3(name=name, dtype=dtype)
-    elif ndim == 4:
-        return T.tensor4(name=name, dtype=dtype)
-    elif ndim == 5:
-        dtensor5 = T.TensorType(dtype, (False,) * 5)
-        return dtensor5(name)
-    else:
-        raise Exception('ndim too large: ' + str(ndim))
+    broadcast = (False,) * ndim
+    return T.TensorType(dtype, broadcast)(name)
 
 
 def shape(x):
@@ -306,9 +293,9 @@ def repeat(x, n):
     If x has shape (samples, dim) and n=2,
     the output will have shape (samples, 2, dim).
     '''
-    tensors = [x] * n
-    stacked = T.stack(*tensors)
-    return stacked.dimshuffle((1, 0, 2))
+    assert x.ndim == 2
+    x = x.dimshuffle((0, 'x', 1))
+    return T.extra_ops.repeat(x, n, axis=1)
 
 
 def tile(x, n):
