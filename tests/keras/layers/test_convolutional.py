@@ -162,9 +162,8 @@ def test_convolution_3d():
     input_len_dim2 = 11
     input_len_dim3 = 12
 
-    weights_in = [
-        np.ones((nb_filter, stack_size, len_conv_dim1, len_conv_dim2, len_conv_dim3)),
-                 np.ones(nb_filter)]
+    weights_in = [np.ones((nb_filter, stack_size, len_conv_dim1, len_conv_dim2, len_conv_dim3)),
+                  np.ones(nb_filter)]
 
     input = np.ones((nb_samples, stack_size, input_len_dim1,
                      input_len_dim2, input_len_dim3))
