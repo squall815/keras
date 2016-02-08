@@ -606,7 +606,7 @@ class MaxPooling1D(_Pooling1D):
 class AveragePooling1D(_Pooling1D):
     '''Average pooling for temporal data.
 
-        # Input shape
+    # Input shape
         3D tensor with shape: `(samples, steps, features)`.
 
     # Output shape
