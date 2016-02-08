@@ -349,9 +349,9 @@ class Convolution3D(Layer):
     provide the keyword argument `input_shape`
     (tuple of integers, does not include the sample axis),
     e.g. `input_shape=(3, 10, 128, 128)` for 10 frames of 128x128 RGB pictures.
-    
+
     Note: this layer will only work with Theano for the time being.
-    
+
     # Input shape
         5D tensor with shape:
         `(samples, channels, len_conv_dim1, len_conv_dim2, len_conv_dim3)` if dim_ordering='th'
@@ -403,7 +403,7 @@ class Convolution3D(Layer):
                  W_regularizer=None, b_regularizer=None, activity_regularizer=None,
                  W_constraint=None, b_constraint=None, **kwargs):
         if K._BACKEND != 'theano':
-            raise Exception(self.__class__.__name__ + 
+            raise Exception(self.__class__.__name__ +
                             ' is currently only working with Theano backend.')
         if border_mode not in {'valid', 'same'}:
             raise Exception('Invalid border mode for Convolution3D:', border_mode)
@@ -807,11 +807,11 @@ class _Pooling3D(Layer):
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
 
         len_dim1 = conv_output_length(len_dim1, self.pool_size[0],
-                                  self.border_mode, self.strides[0])
+                                      self.border_mode, self.strides[0])
         len_dim2 = conv_output_length(len_dim2, self.pool_size[1],
-                                  self.border_mode, self.strides[1])
+                                      self.border_mode, self.strides[1])
         len_dim3 = conv_output_length(len_dim3, self.pool_size[2],
-                                  self.border_mode, self.strides[2])
+                                      self.border_mode, self.strides[2])
 
         if self.dim_ordering == 'th':
             return (input_shape[0], input_shape[1], len_dim1, len_dim2, len_dim3)
@@ -844,9 +844,9 @@ class _Pooling3D(Layer):
 
 class MaxPooling3D(_Pooling3D):
     '''Max pooling operation for 3D data (spatial or spatio-temporal).
-    
+
     Note: this layer will only work with Theano for the time being.
-    
+
     # Input shape
         5D tensor with shape:
         `(samples, channels, len_pool_dim1, len_pool_dim2, len_pool_dim3)` if dim_ordering='th'
@@ -871,7 +871,7 @@ class MaxPooling3D(_Pooling3D):
     def __init__(self, pool_size=(2, 2, 2), strides=None, border_mode='valid',
                  dim_ordering='th', **kwargs):
         if K._BACKEND != 'theano':
-            raise Exception(self.__class__.__name__ + 
+            raise Exception(self.__class__.__name__ +
                             ' is currently only working with Theano backend.')
         super(MaxPooling3D, self).__init__(pool_size, strides, border_mode,
                                            dim_ordering, **kwargs)
@@ -912,7 +912,7 @@ class AveragePooling3D(_Pooling3D):
     def __init__(self, pool_size=(2, 2, 2), strides=None, border_mode='valid',
                  dim_ordering='th', **kwargs):
         if K._BACKEND != 'theano':
-            raise Exception(self.__class__.__name__ + 
+            raise Exception(self.__class__.__name__ +
                             ' is currently only working with Theano backend.')
         super(AveragePooling3D, self).__init__(pool_size, strides, border_mode,
                                                dim_ordering, **kwargs)
@@ -1022,9 +1022,9 @@ class UpSampling2D(Layer):
 class UpSampling3D(Layer):
     '''Repeat the first, second and third dimension of the data
     by size[0], size[1] and size[2] respectively.
-    
+
     Note: this layer will only work with Theano for the time being.
-    
+
     # Input shape
         5D tensor with shape:
         `(samples, channels, dim1, dim2, dim3)` if dim_ordering='th'
@@ -1045,7 +1045,7 @@ class UpSampling3D(Layer):
 
     def __init__(self, size=(2, 2, 2), dim_ordering='th', **kwargs):
         if K._BACKEND != 'theano':
-            raise Exception(self.__class__.__name__ + 
+            raise Exception(self.__class__.__name__ +
                             ' is currently only working with Theano backend.')
         super(UpSampling3D, self).__init__(**kwargs)
         self.input = K.placeholder(ndim=5)
@@ -1197,7 +1197,7 @@ class ZeroPadding3D(Layer):
 
     def __init__(self, padding=(1, 1, 1), dim_ordering='th', **kwargs):
         if K._BACKEND != 'theano':
-            raise Exception(self.__class__.__name__ + 
+            raise Exception(self.__class__.__name__ +
                             ' is currently only working with Theano backend.')
         super(ZeroPadding3D, self).__init__(**kwargs)
         self.padding = tuple(padding)
