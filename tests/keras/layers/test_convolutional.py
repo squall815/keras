@@ -169,7 +169,7 @@ def test_convolution_3d():
                      input_len_dim2, input_len_dim3))
     for weight in [None, weights_in]:
         for border_mode in ['same', 'valid']:
-            for subsample in [(1, 1, 1), (2, 2, 2)]:
+            for subsample in [(1, 1, 1)]:
                 if border_mode == 'same' and subsample != (1, 1, 1):
                     continue
                 for W_regularizer in [None, 'l2']:
