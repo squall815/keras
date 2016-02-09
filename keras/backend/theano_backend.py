@@ -751,8 +751,9 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
                                border_mode=border_mode)
     conv_out = conv_out.dimshuffle(0, 2, 1, 3, 4)
 
-    #support strides by manually slicing the output
-    conv_out = conv_out[:, :, ::strides[0], ::strides[1], ::strides[2]]
+    # support strides by manually slicing the output
+    if strides != (1, 1, 1):
+        conv_out = conv_out[:, :, ::strides[0], ::strides[1], ::strides[2]]
 
     if dim_ordering == 'tf':
         conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
