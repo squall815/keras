@@ -382,6 +382,7 @@ class Convolution3D(Layer):
         border_mode: 'valid' or 'same'.
         subsample: tuple of length 3. Factor by which to subsample output.
             Also called strides elsewhere.
+            Note: 'subsample' can only be (1, 1, 1) with the current implementation.
         W_regularizer: instance of [WeightRegularizer](../regularizers.md)
             (eg. L1 or L2 regularization), applied to the main weights matrix.
         b_regularizer: instance of [WeightRegularizer](../regularizers.md),

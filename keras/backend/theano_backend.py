@@ -701,6 +701,9 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
     if dim_ordering not in {'th', 'tf'}:
         raise Exception('Unknown dim_ordering ' + str(dim_ordering))
 
+    if strides != (1, 1, 1):
+        raise Exception('Strides can only be (1, 1, 1) with the current implementation of theano.')
+
     if dim_ordering == 'tf':
         # TF uses the last dimension as channel dimension,
         # instead of the 2nd one.
