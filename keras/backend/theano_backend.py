@@ -709,6 +709,9 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
     if dim_ordering not in {'th', 'tf'}:
         raise Exception('Unknown dim_ordering ' + str(dim_ordering))
 
+    if border_mode not in {'same', 'valid'}:
+        raise Exception('Invalid border mode: ' + str(border_mode))
+
     if dim_ordering == 'tf':
         # TF uses the last dimension as channel dimension,
         # instead of the 2nd one.
@@ -742,9 +745,10 @@ def conv3d(x, kernel, strides=(1, 1, 1), border_mode='valid', dim_ordering='th',
         x = T.set_subtensor(output[indices], x)
         border_mode = 'valid'
 
+    border_mode_3d = (border_mode, border_mode, border_mode)
     conv_out = conv3d2d.conv3d(signals=x.dimshuffle(0, 2, 1, 3, 4),
                                filters=kernel.dimshuffle(0, 2, 1, 3, 4),
-                               border_mode=border_mode)
+                               border_mode=border_mode_3d)
     conv_out = conv_out.dimshuffle(0, 2, 1, 3, 4)
 
     # support strides by manually slicing the output
