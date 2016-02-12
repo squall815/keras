@@ -440,8 +440,8 @@ class Convolution3D(Layer):
                             self.len_conv_dim1, self.len_conv_dim2, self.len_conv_dim3)
         elif self.dim_ordering == 'tf':
             stack_size = self.input_shape[4]
-            self.W_shape = (self.len_conv_dim1, self.len_conv_dim2,
-                            self.len_conv_dim3, stack_size, self.nb_filter)
+            self.W_shape = (self.len_conv_dim1, self.len_conv_dim2, self.len_conv_dim3,
+                            stack_size, self.nb_filter)
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
 
@@ -480,12 +480,12 @@ class Convolution3D(Layer):
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
 
-        conv_dim1 = conv_output_length(
-            conv_dim1, self.len_conv_dim1, self.border_mode, self.subsample[0])
-        conv_dim2 = conv_output_length(
-            conv_dim2, self.len_conv_dim3, self.border_mode, self.subsample[1])
-        conv_dim3 = conv_output_length(
-            conv_dim3, self.len_conv_dim3, self.border_mode, self.subsample[2])
+        conv_dim1 = conv_output_length(conv_dim1, self.len_conv_dim1,
+                                       self.border_mode, self.subsample[0])
+        conv_dim2 = conv_output_length(conv_dim2, self.len_conv_dim3,
+                                       self.border_mode, self.subsample[1])
+        conv_dim3 = conv_output_length(conv_dim3, self.len_conv_dim3,
+                                       self.border_mode, self.subsample[2])
 
         if self.dim_ordering == 'th':
             return (input_shape[0], self.nb_filter, conv_dim1, conv_dim2, conv_dim3)
@@ -494,7 +494,7 @@ class Convolution3D(Layer):
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
 
-    def get_output(self, train):
+    def get_output(self, train=False):
         X = self.get_input(train)
         conv_out = K.conv3d(X, self.W, strides=self.subsample,
                             border_mode=self.border_mode,
@@ -508,26 +508,27 @@ class Convolution3D(Layer):
             output = conv_out + K.reshape(self.b, (1, 1, 1, 1, self.nb_filter))
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
-
         output = self.activation(output)
         return output
 
     def get_config(self):
-        return {"name": self.__class__.__name__,
-                "nb_filter": self.nb_filter,
-                "len_conv_dim1": self.len_conv_dim1,
-                "len_conv_dim2": self.len_conv_dim2,
-                "len_conv_dim3": self.len_conv_dim3,
-                "dim_ordering": self.dim_ordering,
-                "init": self.init.__name__,
-                "activation": self.activation.__name__,
-                "border_mode": self.border_mode,
-                "subsample": self.subsample,
-                "W_regularizer": self.W_regularizer.get_config() if self.W_regularizer else None,
-                "b_regularizer": self.b_regularizer.get_config() if self.b_regularizer else None,
-                "activity_regularizer": self.activity_regularizer.get_config() if self.activity_regularizer else None,
-                "W_constraint": self.W_constraint.get_config() if self.W_constraint else None,
-                "b_constraint": self.b_constraint.get_config() if self.b_constraint else None}
+        config = {"name": self.__class__.__name__,
+                  "nb_filter": self.nb_filter,
+                  "len_conv_dim1": self.len_conv_dim1,
+                  "len_conv_dim2": self.len_conv_dim2,
+                  "len_conv_dim3": self.len_conv_dim3,
+                  "dim_ordering": self.dim_ordering,
+                  "init": self.init.__name__,
+                  "activation": self.activation.__name__,
+                  "border_mode": self.border_mode,
+                  "subsample": self.subsample,
+                  "W_regularizer": self.W_regularizer.get_config() if self.W_regularizer else None,
+                  "b_regularizer": self.b_regularizer.get_config() if self.b_regularizer else None,
+                  "activity_regularizer": self.activity_regularizer.get_config() if self.activity_regularizer else None,
+                  "W_constraint": self.W_constraint.get_config() if self.W_constraint else None,
+                  "b_constraint": self.b_constraint.get_config() if self.b_constraint else None}
+        base_config = super(Convolution3D, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
 
 
 class _Pooling1D(Layer):
