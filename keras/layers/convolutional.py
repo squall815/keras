@@ -109,7 +109,7 @@ class Convolution1D(Layer):
         self.W_shape = (self.nb_filter, input_dim, self.filter_length, 1)
         self.W = self.init(self.W_shape)
         self.b = K.zeros((self.nb_filter,))
-        self.params = [self.W, self.b]
+        self.trainable_weights = [self.W, self.b]
         self.regularizers = []
 
         if self.W_regularizer:
@@ -265,7 +265,7 @@ class Convolution2D(Layer):
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
         self.W = self.init(self.W_shape)
         self.b = K.zeros((self.nb_filter,))
-        self.params = [self.W, self.b]
+        self.trainable_weights = [self.W, self.b]
         self.regularizers = []
 
         if self.W_regularizer:
@@ -349,22 +349,25 @@ class Convolution3D(Layer):
     provide the keyword argument `input_shape`
     (tuple of integers, does not include the sample axis),
     e.g. `input_shape=(3, 10, 128, 128)` for 10 frames of 128x128 RGB pictures.
+
+    Note: this layer will only work with Theano for the time being.
+
     # Input shape
         5D tensor with shape:
-        `(samples, channels, time, rows, cols)` if dim_ordering='th'
+        `(samples, channels, len_conv_dim1, len_conv_dim2, len_conv_dim3)` if dim_ordering='th'
         or 5D tensor with shape:
-        `(samples, time, rows, cols, channels)` if dim_ordering='tf'.
+        `(samples, len_conv_dim1, len_conv_dim2, len_conv_dim3, channels)` if dim_ordering='tf'.
     # Output shape
         5D tensor with shape:
-        `(samples, nb_filter, new_time, new_rows, new_cols)` if dim_ordering='th'
+        `(samples, nb_filter, len_new_dim1, len_new_dim2, len_new_dim3)` if dim_ordering='th'
         or 5D tensor with shape:
-        `(samples, new_time, new_rows, new_cols, nb_filter)` if dim_ordering='tf'.
-        `rows` and `cols` values might have changed due to padding.
+        `(samples, len_new_dim1, len_new_dim2, len_new_dim3, nb_filter)` if dim_ordering='tf'.
+        `len_new_dim1`, `len_new_dim2` and `len_new_dim3` values might have changed due to padding.
     # Arguments
         nb_filter: Number of convolution filters to use.
-        nb_time: Number of time frames(or volume depth) in the covolution kernel.
-        nb_row: Number of rows in the convolution kernel.
-        nb_col: Number of columns in the convolution kernel.
+        len_conv_dim1: Length of the first dimension in the covolution kernel.
+        len_conv_dim2: Length of the second dimension in the convolution kernel.
+        len_conv_dim3: Length of the third dimension in the convolution kernel.
         init: name of initialization function for the weights of the layer
             (see [initializations](../initializations.md)), or alternatively,
             Theano function to use for weights initialization.
@@ -377,8 +380,9 @@ class Convolution3D(Layer):
             (ie. "linear" activation: a(x) = x).
         weights: list of numpy arrays to set as initial weights.
         border_mode: 'valid' or 'same'.
-        subsample: tuple of length 2. Factor by which to subsample output.
+        subsample: tuple of length 3. Factor by which to subsample output.
             Also called strides elsewhere.
+            Note: 'subsample' is implemented by slicing the output of conv3d with strides=(1,1,1).
         W_regularizer: instance of [WeightRegularizer](../regularizers.md)
             (eg. L1 or L2 regularization), applied to the main weights matrix.
         b_regularizer: instance of [WeightRegularizer](../regularizers.md),
@@ -394,18 +398,20 @@ class Convolution3D(Layer):
     '''
     input_ndim = 5
 
-    def __init__(self, nb_filter, nb_time, nb_row, nb_col,
+    def __init__(self, nb_filter, len_conv_dim1, len_conv_dim2, len_conv_dim3,
                  init='glorot_uniform', activation='linear', weights=None,
                  border_mode='valid', subsample=(1, 1, 1), dim_ordering='th',
                  W_regularizer=None, b_regularizer=None, activity_regularizer=None,
                  W_constraint=None, b_constraint=None, **kwargs):
-
+        if K._BACKEND != 'theano':
+            raise Exception(self.__class__.__name__ +
+                            ' is currently only working with Theano backend.')
         if border_mode not in {'valid', 'same'}:
             raise Exception('Invalid border mode for Convolution3D:', border_mode)
         self.nb_filter = nb_filter
-        self.nb_time = nb_time
-        self.nb_row = nb_row
-        self.nb_col = nb_col
+        self.len_conv_dim1 = len_conv_dim1
+        self.len_conv_dim2 = len_conv_dim2
+        self.len_conv_dim3 = len_conv_dim3
         self.init = initializations.get(init)
         self.activation = activations.get(activation)
         assert border_mode in {'valid', 'same'}, 'border_mode must be in {valid, same}'
@@ -431,17 +437,17 @@ class Convolution3D(Layer):
         if self.dim_ordering == 'th':
             stack_size = self.input_shape[1]
             self.W_shape = (self.nb_filter, stack_size,
-                            self.nb_time, self.nb_row, self.nb_col)
+                            self.len_conv_dim1, self.len_conv_dim2, self.len_conv_dim3)
         elif self.dim_ordering == 'tf':
             stack_size = self.input_shape[4]
-            self.W_shape = (self.nb_time, self.nb_row,
-                            self.nb_col, stack_size, self.nb_filter)
+            self.W_shape = (self.len_conv_dim1, self.len_conv_dim2, self.len_conv_dim3,
+                            stack_size, self.nb_filter)
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
 
         self.W = self.init(self.W_shape)
         self.b = K.zeros((self.nb_filter,))
-        self.params = [self.W, self.b]
+        self.trainable_weights = [self.W, self.b]
         self.regularizers = []
 
         if self.W_regularizer:
@@ -464,31 +470,31 @@ class Convolution3D(Layer):
     def output_shape(self):
         input_shape = self.input_shape
         if self.dim_ordering == 'th':
-            time = input_shape[2]
-            rows = input_shape[3]
-            cols = input_shape[4]
+            conv_dim1 = input_shape[2]
+            conv_dim2 = input_shape[3]
+            conv_dim3 = input_shape[4]
         elif self.dim_ordering == 'tf':
-            time = input_shape[1]
-            rows = input_shape[2]
-            cols = input_shape[3]
+            conv_dim1 = input_shape[1]
+            conv_dim2 = input_shape[2]
+            conv_dim3 = input_shape[3]
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
 
-        time = conv_output_length(
-            time, self.nb_time, self.border_mode, self.subsample[0])
-        rows = conv_output_length(
-            rows, self.nb_row, self.border_mode, self.subsample[1])
-        cols = conv_output_length(
-            cols, self.nb_col, self.border_mode, self.subsample[2])
+        conv_dim1 = conv_output_length(conv_dim1, self.len_conv_dim1,
+                                       self.border_mode, self.subsample[0])
+        conv_dim2 = conv_output_length(conv_dim2, self.len_conv_dim3,
+                                       self.border_mode, self.subsample[1])
+        conv_dim3 = conv_output_length(conv_dim3, self.len_conv_dim3,
+                                       self.border_mode, self.subsample[2])
 
         if self.dim_ordering == 'th':
-            return (input_shape[0], self.nb_filter, time, rows, cols)
+            return (input_shape[0], self.nb_filter, conv_dim1, conv_dim2, conv_dim3)
         elif self.dim_ordering == 'tf':
-            return (input_shape[0], time, rows, cols, self.nb_filter)
+            return (input_shape[0], conv_dim1, conv_dim2, conv_dim3, self.nb_filter)
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
 
-    def get_output(self, train):
+    def get_output(self, train=False):
         X = self.get_input(train)
         conv_out = K.conv3d(X, self.W, strides=self.subsample,
                             border_mode=self.border_mode,
@@ -502,26 +508,27 @@ class Convolution3D(Layer):
             output = conv_out + K.reshape(self.b, (1, 1, 1, 1, self.nb_filter))
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
-
         output = self.activation(output)
         return output
 
     def get_config(self):
-        return {"name": self.__class__.__name__,
-                "nb_filter": self.nb_filter,
-                "nb_time": self.nb_time,
-                "nb_row": self.nb_row,
-                "nb_col": self.nb_col,
-                "dim_ordering": self.dim_ordering,
-                "init": self.init.__name__,
-                "activation": self.activation.__name__,
-                "border_mode": self.border_mode,
-                "subsample": self.subsample,
-                "W_regularizer": self.W_regularizer.get_config() if self.W_regularizer else None,
-                "b_regularizer": self.b_regularizer.get_config() if self.b_regularizer else None,
-                "activity_regularizer": self.activity_regularizer.get_config() if self.activity_regularizer else None,
-                "W_constraint": self.W_constraint.get_config() if self.W_constraint else None,
-                "b_constraint": self.b_constraint.get_config() if self.b_constraint else None}
+        config = {"name": self.__class__.__name__,
+                  "nb_filter": self.nb_filter,
+                  "len_conv_dim1": self.len_conv_dim1,
+                  "len_conv_dim2": self.len_conv_dim2,
+                  "len_conv_dim3": self.len_conv_dim3,
+                  "dim_ordering": self.dim_ordering,
+                  "init": self.init.__name__,
+                  "activation": self.activation.__name__,
+                  "border_mode": self.border_mode,
+                  "subsample": self.subsample,
+                  "W_regularizer": self.W_regularizer.get_config() if self.W_regularizer else None,
+                  "b_regularizer": self.b_regularizer.get_config() if self.b_regularizer else None,
+                  "activity_regularizer": self.activity_regularizer.get_config() if self.activity_regularizer else None,
+                  "W_constraint": self.W_constraint.get_config() if self.W_constraint else None,
+                  "b_constraint": self.b_constraint.get_config() if self.b_constraint else None}
+        base_config = super(Convolution3D, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
 
 
 class _Pooling1D(Layer):
@@ -604,7 +611,7 @@ class MaxPooling1D(_Pooling1D):
 class AveragePooling1D(_Pooling1D):
     '''Average pooling for temporal data.
 
-        # Input shape
+    # Input shape
         3D tensor with shape: `(samples, steps, features)`.
 
     # Output shape
@@ -791,27 +798,27 @@ class _Pooling3D(Layer):
     def output_shape(self):
         input_shape = self.input_shape
         if self.dim_ordering == 'th':
-            time = input_shape[2]
-            rows = input_shape[3]
-            cols = input_shape[4]
+            len_dim1 = input_shape[2]
+            len_dim2 = input_shape[3]
+            len_dim3 = input_shape[4]
         elif self.dim_ordering == 'tf':
-            time = input_shape[1]
-            rows = input_shape[2]
-            cols = input_shape[3]
+            len_dim1 = input_shape[1]
+            len_dim2 = input_shape[2]
+            len_dim3 = input_shape[3]
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
 
-        time = conv_output_length(time, self.pool_size[0],
-                                  self.border_mode, self.strides[0])
-        rows = conv_output_length(rows, self.pool_size[1],
-                                  self.border_mode, self.strides[1])
-        cols = conv_output_length(cols, self.pool_size[2],
-                                  self.border_mode, self.strides[2])
+        len_dim1 = conv_output_length(len_dim1, self.pool_size[0],
+                                      self.border_mode, self.strides[0])
+        len_dim2 = conv_output_length(len_dim2, self.pool_size[1],
+                                      self.border_mode, self.strides[1])
+        len_dim3 = conv_output_length(len_dim3, self.pool_size[2],
+                                      self.border_mode, self.strides[2])
 
         if self.dim_ordering == 'th':
-            return (input_shape[0], input_shape[1], time, rows, cols)
+            return (input_shape[0], input_shape[1], len_dim1, len_dim2, len_dim3)
         elif self.dim_ordering == 'tf':
-            return (input_shape[0], time, rows, cols, input_shape[4])
+            return (input_shape[0], len_dim1, len_dim2, len_dim3, input_shape[4])
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
 
@@ -838,22 +845,25 @@ class _Pooling3D(Layer):
 
 
 class MaxPooling3D(_Pooling3D):
-    '''Max pooling operation for spatial-temporal data.
+    '''Max pooling operation for 3D data (spatial or spatio-temporal).
+
+    Note: this layer will only work with Theano for the time being.
+
     # Input shape
         5D tensor with shape:
-        `(samples, channels, time, rows, cols)` if dim_ordering='th'
+        `(samples, channels, len_pool_dim1, len_pool_dim2, len_pool_dim3)` if dim_ordering='th'
         or 5D tensor with shape:
-        `(samples, time, rows, cols, channels)` if dim_ordering='tf'.
+        `(samples, len_pool_dim1, len_pool_dim2, len_pool_dim3, channels)` if dim_ordering='tf'.
     # Output shape
         5D tensor with shape:
-        `(nb_samples, channels, pooled_time, pooled_rows, pooled_cols)` if dim_ordering='th'
+        `(nb_samples, channels, pooled_dim1, pooled_dim2, pooled_dim3)` if dim_ordering='th'
         or 5D tensor with shape:
-        `(samples, pooled_time, pooled_rows, pooled_cols, channels)` if dim_ordering='tf'.
+        `(samples, pooled_dim1, pooled_dim2, pooled_dim3, channels)` if dim_ordering='tf'.
     # Arguments
         pool_size: tuple of 3 integers,
-            factors by which to downscale (temporal, vertical, horizontal).
-            (2, 2, 2) will halve the movie(or 3D volume) in each dimension.
-        strides: tuple of 2 integers, or None. Strides values.
+            factors by which to downscale (dim1, dim2, dim3).
+            (2, 2, 2) will halve the size of the 3D input in each dimension.
+        strides: tuple of 3 integers, or None. Strides values.
         border_mode: 'valid' or 'same'.
             Note: 'same' will only work with TensorFlow for the time being.
         dim_ordering: 'th' or 'tf'. In 'th' mode, the channels dimension
@@ -862,6 +872,9 @@ class MaxPooling3D(_Pooling3D):
 
     def __init__(self, pool_size=(2, 2, 2), strides=None, border_mode='valid',
                  dim_ordering='th', **kwargs):
+        if K._BACKEND != 'theano':
+            raise Exception(self.__class__.__name__ +
+                            ' is currently only working with Theano backend.')
         super(MaxPooling3D, self).__init__(pool_size, strides, border_mode,
                                            dim_ordering, **kwargs)
 
@@ -873,22 +886,25 @@ class MaxPooling3D(_Pooling3D):
 
 
 class AveragePooling3D(_Pooling3D):
-    '''Average pooling operation for spatial-temporal data.
+    '''Average pooling operation for 3D data (spatial or spatio-temporal).
+
+    Note: this layer will only work with Theano for the time being.
+
     # Input shape
         5D tensor with shape:
-        `(samples, channels, time, rows, cols)` if dim_ordering='th'
+        `(samples, channels, len_pool_dim1, len_pool_dim2, len_pool_dim3)` if dim_ordering='th'
         or 5D tensor with shape:
-        `(samples, time, rows, cols, channels)` if dim_ordering='tf'.
+        `(samples, len_pool_dim1, len_pool_dim2, len_pool_dim3, channels)` if dim_ordering='tf'.
     # Output shape
         5D tensor with shape:
-        `(nb_samples, channels, pooled_time, pooled_rows, pooled_cols)` if dim_ordering='th'
+        `(nb_samples, channels, pooled_dim1, pooled_dim2, pooled_dim3)` if dim_ordering='th'
         or 5D tensor with shape:
-        `(samples, pooled_time, pooled_rows, pooled_cols, channels)` if dim_ordering='tf'.
+        `(samples, pooled_dim1, pooled_dim2, pooled_dim3, channels)` if dim_ordering='tf'.
     # Arguments
         pool_size: tuple of 3 integers,
-            factors by which to downscale (temporal, vertical, horizontal).
-            (2, 2, 2) will halve the movie(or 3D volume) in each dimension.
-        strides: tuple of 2 integers, or None. Strides values.
+            factors by which to downscale (dim1, dim2, dim3).
+            (2, 2, 2) will halve the size of the 3D input in each dimension.
+        strides: tuple of 3 integers, or None. Strides values.
         border_mode: 'valid' or 'same'.
             Note: 'same' will only work with TensorFlow for the time being.
         dim_ordering: 'th' or 'tf'. In 'th' mode, the channels dimension
@@ -897,6 +913,9 @@ class AveragePooling3D(_Pooling3D):
 
     def __init__(self, pool_size=(2, 2, 2), strides=None, border_mode='valid',
                  dim_ordering='th', **kwargs):
+        if K._BACKEND != 'theano':
+            raise Exception(self.__class__.__name__ +
+                            ' is currently only working with Theano backend.')
         super(AveragePooling3D, self).__init__(pool_size, strides, border_mode,
                                                dim_ordering, **kwargs)
 
@@ -1003,20 +1022,23 @@ class UpSampling2D(Layer):
 
 
 class UpSampling3D(Layer):
-    '''Repeat the time, rows and columns of the data
+    '''Repeat the first, second and third dimension of the data
     by size[0], size[1] and size[2] respectively.
+
+    Note: this layer will only work with Theano for the time being.
+
     # Input shape
         5D tensor with shape:
-        `(samples, channels, time, rows, cols)` if dim_ordering='th'
+        `(samples, channels, dim1, dim2, dim3)` if dim_ordering='th'
         or 5D tensor with shape:
-        `(samples, time, rows, cols, channels)` if dim_ordering='tf'.
+        `(samples, dim1, dim2, dim3, channels)` if dim_ordering='tf'.
     # Output shape
         5D tensor with shape:
-        `(samples, channels, upsampled_time, upsampled_rows, upsampled_cols)` if dim_ordering='th'
+        `(samples, channels, upsampled_dim1, upsampled_dim2, upsampled_dim3)` if dim_ordering='th'
         or 5D tensor with shape:
-        `(samples, upsampled_time, upsampled_rows, upsampled_cols, channels)` if dim_ordering='tf'.
+        `(samples, upsampled_dim1, upsampled_dim2, upsampled_dim3, channels)` if dim_ordering='tf'.
     # Arguments
-        size: tuple of 3 integers. The upsampling factors for time, rows and columns.
+        size: tuple of 3 integers. The upsampling factors for dim1, dim2 and dim3.
         dim_ordering: 'th' or 'tf'.
             In 'th' mode, the channels dimension (the depth)
             is at index 1, in 'tf' mode is it at index 4.
@@ -1024,6 +1046,9 @@ class UpSampling3D(Layer):
     input_ndim = 5
 
     def __init__(self, size=(2, 2, 2), dim_ordering='th', **kwargs):
+        if K._BACKEND != 'theano':
+            raise Exception(self.__class__.__name__ +
+                            ' is currently only working with Theano backend.')
         super(UpSampling3D, self).__init__(**kwargs)
         self.input = K.placeholder(ndim=5)
         self.size = tuple(size)
@@ -1153,7 +1178,9 @@ class ZeroPadding2D(Layer):
 
 
 class ZeroPadding3D(Layer):
-    '''Zero-padding layer for 3D input (e.g. movie, 3D volume).
+    '''Zero-padding layer for 3D data (spatial or spatio-temporal).
+
+    Note: this layer will only work with Theano for the time being.
 
     # Input shape
         5D tensor with shape:
@@ -1171,6 +1198,9 @@ class ZeroPadding3D(Layer):
     input_ndim = 5
 
     def __init__(self, padding=(1, 1, 1), dim_ordering='th', **kwargs):
+        if K._BACKEND != 'theano':
+            raise Exception(self.__class__.__name__ +
+                            ' is currently only working with Theano backend.')
         super(ZeroPadding3D, self).__init__(**kwargs)
         self.padding = tuple(padding)
         self.input = K.placeholder(ndim=5)
